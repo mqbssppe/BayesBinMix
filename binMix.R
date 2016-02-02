@@ -1073,6 +1073,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			j2 <- myPair[2]
 			alreadyInJ1 <- alreadyInJ2 <- c()
 			proposalRatio <- 0
+			checkCondition <- TRUE
 			while ( length(notProcessed) > 0 ){
 				i <- notProcessed[1]
 				processed <- c(processed,i)
@@ -1080,7 +1081,6 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 				u <- log(gamma[j1] + n1New) - log(gamma[j2] + n2New) + sum( lgamma(alpha + x[i,] + s1New) + lgamma(beta + 1 + n1New - s1New - x[i,]) ) - d*sum(lgamma(alpha+beta+n1New+1)) + sum( lgamma(alpha + s2New) + lgamma(beta + n2New - s2New) ) - d*sum(lgamma(alpha+beta+n2New)) - sum( lgamma(alpha + s1New) + lgamma(beta + n1New - s1New) ) + d*sum(lgamma(alpha+beta+n1New)) - sum( lgamma(alpha + x[i,] + s2New) + lgamma(beta + 1 + n2New - s2New - x[i,]) ) + d*sum(lgamma(alpha+beta+n2New+1))
 				u <- exp(u)
 				proposalProbabities <- u/(1 + u)
-				checkCondition <- TRUE
 				if( is.finite(proposalProbabities) == FALSE ){checkCondition <- FALSE; proposalProbabities <- 0.5}
 				if( runif(1) < proposalProbabities ){ 
 					propZ[i] <- j1
