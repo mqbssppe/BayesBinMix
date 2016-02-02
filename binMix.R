@@ -1080,7 +1080,9 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 				u <- log(gamma[j1] + n1New) - log(gamma[j2] + n2New) + sum( lgamma(alpha + x[i,] + s1New) + lgamma(beta + 1 + n1New - s1New - x[i,]) ) - d*sum(lgamma(alpha+beta+n1New+1)) + sum( lgamma(alpha + s2New) + lgamma(beta + n2New - s2New) ) - d*sum(lgamma(alpha+beta+n2New)) - sum( lgamma(alpha + s1New) + lgamma(beta + n1New - s1New) ) + d*sum(lgamma(alpha+beta+n1New)) - sum( lgamma(alpha + x[i,] + s2New) + lgamma(beta + 1 + n2New - s2New - x[i,]) ) + d*sum(lgamma(alpha+beta+n2New+1))
 				u <- exp(u)
 				proposalProbabities <- u/(1 + u)
-				if(runif(1) < proposalProbabities){ 
+				checkCondition <- TRUE
+				if( is.finite(proposalProbabities) == FALSE ){checkCondition <- FALSE; proposalProbabities <- 0.5}
+				if( runif(1) < proposalProbabities ){ 
 					propZ[i] <- j1
 					proposalRatio <- proposalRatio - log(proposalProbabities) 
 					n1New <- n1New + 1
@@ -1123,7 +1125,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
 			}
 
-			if( log(runif(1)) < logAR ){
+			if( (log(runif(1)) < logAR) && (checkCondition == TRUE) ){
 				reallocationAcceptanceRatio4 <- reallocationAcceptanceRatio4 + 1 
 				z <- propZ
 				s <- rep(0,K)
