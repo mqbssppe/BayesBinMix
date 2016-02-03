@@ -531,9 +531,79 @@ collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,
 
 
 
+kmeansK <- function(x,Kstart,alpha,beta,gamma,priorK){
+	Kmax <- Kstart
+	K<- Kstart
+	n <- dim(x)[1]
+	d <- dim(x)[2]
+	theta <- array(data = runif(Kmax*d), dim = c(Kmax,d)) # initial values for response probabilities
+	s <- l <- newL <- numeric(Kmax)
+	sx <- array(data = 0, dim = c(Kmax,d))
 
 
-kmeansK <- function(x,Kmax,alpha,beta,gamma,priorK){
+	z <- kmeans(x, centers = K)$cluster
+	s[1:K] <- rep(0,K)
+	sx[1:K,] <- array(data = 0, dim = c(K,d))
+	for(i in 1:n){
+		s[z[i]] <- s[z[i]] + 1
+		sx[z[i],] <- sx[z[i],] + x[i,]
+	}
+	p <- myDirichlet(gamma[1:K] + s[1:K])
+	for(k in 1:K){
+		theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
+	}		
+
+
+	iter <- 1
+	J <- d + 1
+	mcmc <- array(data = NA, dim = c(1,K,J))
+	for (j in 1:d){
+		for(k in 1:K){
+			mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
+		}
+	}
+	mcmc[1,,J] <- p
+	ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
+	maxLL <- ll
+	goodZ <- z
+
+
+
+	for(K in rep(Kstart, each = 50)){
+		z <- kmeans(x, centers = K)$cluster
+		s[1:K] <- rep(0,K)
+		sx[1:K,] <- array(data = 0, dim = c(K,d))
+		for(i in 1:n){
+			s[z[i]] <- s[z[i]] + 1
+			sx[z[i],] <- sx[z[i],] + x[i,]
+		}
+		p <- myDirichlet(gamma[1:K] + s[1:K])
+		for(k in 1:K){
+			theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
+		}		
+
+
+		iter <- 1
+		J <- d + 1
+		mcmc <- array(data = NA, dim = c(1,K,J))
+		for (j in 1:d){
+			for(k in 1:K){
+				mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
+			}
+		}
+		mcmc[1,,J] <- p
+		ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
+		if(is.na(ll)==TRUE){ll <- maxLL - 1}
+		if(ll > maxLL){maxLL <- ll; goodZ <- z; cat(paste0("                 new goodZ: LL = ",ll," (K = ",K,")"),"\n")}
+	}
+	return(goodZ)
+}
+
+#############################################################################
+#############################################################################
+
+
+kmeansK0 <- function(x,Kmax,alpha,beta,gamma,priorK){
 
 	K<- 1
 	n <- dim(x)[1]
@@ -718,7 +788,10 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			priorK[k] <- dpois(k,lambda = 1, log = TRUE) - denom 
 		}
 	}
-	if(missing(Kstart)){Kstart <- 1}
+	if(missing(kmeansInit) == TRUE){kmeansInit <- TRUE}	
+	if(missing(Kstart)){
+		if(kmeansInit == TRUE){Kstart <- Kmax}else{Kstart <- 1}
+	}
 	K <- Kstart
 	p <- myDirichlet(rep(1,K)) # initial values for cluster probabilities
 	theta <- array(data = runif(Kmax*d), dim = c(Kmax,d)) # initial values for response probabilities
@@ -731,11 +804,10 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 	#}
 	cat(paste("Initializing..."),"\n")
 	cat("\n")
-	if(missing(kmeansInit) == TRUE){kmeansInit <- TRUE}
 	if(kmeansInit == TRUE){
 #		z <- kmeans(x, centers = K)$cluster
-		z <- kmeansK(x,Kmax=Kmax,alpha=alpha,beta=beta,gamma=gamma,priorK = priorK)
-		K <- max(z)
+		z <- kmeansK(x,Kstart=K,alpha=alpha,beta=beta,gamma=gamma,priorK = priorK)
+		#K <- max(z)
 		s[1:K] <- rep(0,K)
 		sx[1:K,] <- array(data = 0, dim = c(K,d))
 		for(i in 1:n){
@@ -814,7 +886,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 	constLGAMMA <- 2*lgamma(ejectionAlpha) - lgamma(2*ejectionAlpha)
 	kValues <- c()
 	plot(c(1,m),c(0,1),type = "n")
-	if(missing(metropolisMoves) == TRUE){metropolisMoves <- 1:4}
+	if(missing(metropolisMoves) == TRUE){metropolisMoves <- c('M1','M2','M3','M4')}
 	lmm <- length(metropolisMoves)
 
 	cat(paste("    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4"),"\n")
@@ -858,6 +930,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 				}
 			}
 			newL[1:K] <- exp(newL[1:K])
+			if( max(newL[1:K]) == 0){newL[1:K] <- rep(1,K);cat("oops","\n")}
 			z[i] <- sample(K,1,prob = newL[1:K])
 			#if( zOld[i] != z[i] ){
 			sx[zOld[i],] <- sx[zOld[i],] - x[i,]
@@ -877,7 +950,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 	#mNumber <- 5
 
 
-		if(mNumber == 1){
+		if(mNumber == 'M1'){
 #		if(1 > 2){
 #		reallocation proposal 1
 		if (K > 1){
@@ -923,7 +996,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 		}
 		}
 #		end of reallocation proposal 1
-		if(mNumber == 2){
+		if(mNumber == 'M2'){
 
 #		reallocation proposal2
 		if(K > 1){
@@ -975,7 +1048,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 #		end of reallocation proposal 2
 #		} #remove this
 #		update the number of clusters
-		if(mNumber == 3){
+		if(mNumber == 'M3'){
 		if ( runif(1) < birthProbs[K] ){
 		# BIRTH MOVE
 			birth = TRUE
@@ -999,9 +1072,16 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			if(nNew[2] == 0){sNew2 <- rep(0,d)}else{sNew2 <- colSums(array(x[newSet2,],dim = c(nNew[2],d)))}
 			sNew <- rbind(sNew1,sNew2)
 			logAR <- log( (1 - birthProbs[K+1])/birthProbs[K] ) + constLGAMMA + lgamma(2*ejectionAlpha + nOld[1]) - lgamma(ejectionAlpha + nNew[1]) - lgamma(ejectionAlpha + nNew[2]) + priorK[K+1] - priorK[K]
-			for(i in 1:2){
-				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
-			}
+			logAR <- logAR + d*( lgamma(alpha + beta + nOld[1]) - lgamma(alpha + beta + nNew[1]) - lgamma(alpha + beta + nNew[2]) )
+			logAR <- logAR + sum( 
+						  lgamma(alpha + sNew[1,]) + lgamma(beta + nNew[1] - sNew[1,]) 
+						+ lgamma(alpha + sNew[2,]) + lgamma(beta + nNew[2] - sNew[2,]) 
+						- lgamma(alpha + sOld[1,]) - lgamma(beta + nOld[1] - sOld[1,]) 
+					)
+
+#			for(i in 1:2){
+#				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
+#			}
 			logAR <- logAR + sum(lgamma(gamma[myPair] + nNew)) - sum(lgamma(gamma[myPair[1]] + nOld[1])) + lgamma(sum(gamma[1:(K+1)])) - lgamma(sum(gamma[1:K])) - lgamma(sum(gamma[1:(K+1)]) + n) + lgamma(sum(gamma[1:K]) + n) - lgamma(gamma[K+1])
 		}else{
 		# DEATH MOVE
@@ -1022,9 +1102,19 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			sNew2 <- rep(0,d)
 			sNew <- rbind(sNew1,sNew2)
 			logAR <- - (log( (1 - birthProbs[K])/birthProbs[K - 1] ) + constLGAMMA + lgamma(2*ejectionAlpha + nNew[1]) - lgamma(ejectionAlpha + nOld[1]) - lgamma(ejectionAlpha + nOld[2]))+ priorK[K - 1] - priorK[K]
-			for(i in 1:2){
-				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
-			}
+
+
+			logAR <- logAR + d*( lgamma(alpha + beta + nOld[1]) + lgamma(alpha + beta + nOld[2]) - lgamma(alpha + beta + nNew[1]) )
+			logAR <- logAR + sum( 
+						  lgamma(alpha + sNew[1,]) + lgamma(beta + nNew[1] - sNew[1,]) 
+						- lgamma(alpha + sOld[1,]) - lgamma(beta + nOld[1] - sOld[1,]) 
+						- lgamma(alpha + sOld[2,]) - lgamma(beta + nOld[2] - sOld[2,])
+					 )
+
+
+#			for(i in 1:2){
+#				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
+#			}
 			logAR <- logAR + lgamma(gamma[myPair[1]] + nNew[1]) - sum(lgamma(gamma[myPair] + nOld)) + lgamma(sum(gamma[1:(K-1)])) - lgamma(sum(gamma[1:K])) - lgamma(sum(gamma[1:(K-1)]) + n) + lgamma(sum(gamma[1:K]) + n) + lgamma(gamma[K])
 			
 		}
@@ -1053,7 +1143,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 #		end of update for the number of clusters
 
 
-		if(mNumber == 4){
+		if(mNumber == 'M4'){
 
 #	reallocation proposal from conditional probs
 
@@ -1124,7 +1214,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			for (i in 1:2){
 				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
 			}
-
+			logAR <- logAR + sum(lgamma(gamma[myPair] + nNew)) - sum(lgamma(gamma[myPair] + nOld)) 
 			if( (log(runif(1)) < logAR) && (checkCondition == TRUE) ){
 				reallocationAcceptanceRatio4 <- reallocationAcceptanceRatio4 + 1 
 				z <- propZ
