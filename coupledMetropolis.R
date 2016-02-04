@@ -1572,7 +1572,7 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 	close(conTheta)
 	close(conP)
 	close(conZ)
-
+	write.table(sampledK, file = paste0(outPrefix,"/K.allChains.txt"), col.names = paste0('chain.',1:nChains),quote=FALSE,row.names = FALSE)
 	sink()
 
 }
