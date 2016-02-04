@@ -1437,9 +1437,9 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 
 library('foreach')
 library('doMC')
-coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m){
+coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m, Kmax){
 	if(missing(ClusterPrior) == TRUE){ClusterPrior <- 'poisson'}
-	Kmax <- 30; alpha <- 1; beta <- 1; gamma <- rep(1,Kmax); d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
+	alpha <- 1; beta <- 1; gamma <- rep(1,Kmax); d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
 	if(ClusterPrior == "uniform"){
 		priorK <- rep(log(1/Kmax),Kmax)
 	}
@@ -1464,7 +1464,7 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m)
 	foreach(myChain=1:nChains) %dopar% {
 		outDir <- outputDirs[myChain]
 		myHeat <- temperatures[myChain]
-		allocationSamplerBinMix( alpha = 1, beta = 1, gamma = rep(1,30), m = 10, burn= 9, data = binaryData, 
+		allocationSamplerBinMix( alpha = 1, beta = 1, gamma = rep(1,Kmax), m = 10, burn= 9, data = binaryData, 
 					thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = 0.2, 
 					outputDir = outDir,Kstart=1,heat=myHeat,metropolisMoves='M3',LS = FALSE)
 	}
@@ -1553,7 +1553,8 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m)
 						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves='M3',LS = FALSE)
 		}
 
-		matplot(sampledK[1:iter,],type = "l",lty = 1)
+		matplot(sampledK[1:iter,],type = "l",lty = 1,lwd = 2, col = topo.colors(nChains))
+		legend('topleft',paste0('f(z,K|data)^{',round(heats,3),'}'),lty = 1, lwd = 2, col = topo.colors(nChains))
 		write(paste0('chain switching acceptance rate: ',100*round(ar/iter,3),'%.'),stderr())
 		
 		kk <- as.numeric(read.table(paste0(outPrefix,"1/K.txt"))[1,])
@@ -1572,7 +1573,7 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m)
 	close(conP)
 	close(conZ)
 
-
+	sink()
 
 }
 
