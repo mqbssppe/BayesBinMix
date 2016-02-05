@@ -1437,9 +1437,24 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 
 library('foreach')
 library('doMC')
-coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m, Kmax){
+coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma){
+	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
+	if(missing(heats) == TRUE){heats <- seq(1,0.3,length = nChains)}else{
+		if(heats[1] != 1){stop(cat(paste("    [ERROR]: `heats[1]` should be equal to one."), "\n"))}
+	}
+	if(length(heats) != nChains){
+		stop(cat(paste("    [ERROR]: `length(heats)` should be equal to `nChains`."), "\n"))
+	}
 	if(missing(ClusterPrior) == TRUE){ClusterPrior <- 'poisson'}
-	alpha <- 1; beta <- 1; gamma <- rep(1,Kmax); d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
+	if (missing(alpha)) {alpha <- 1}
+	if (missing(beta)) {beta <- 1}
+	if (missing(binaryData)) {stop(cat(paste("    [ERROR]: data is missing."), "\n"))}
+	if (missing(gamma)) {gamma <- rep(1,Kmax)}
+	if (length(table(gamma)) > 1){
+		stop(cat(paste("    [ERROR]: Dirichlet prior parameters should be the same."), "\n"))
+	}
+
+	d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
 	if(ClusterPrior == "uniform"){
 		priorK <- rep(log(1/Kmax),Kmax)
 	}
@@ -1460,7 +1475,7 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 	outputDirs <- paste0(outPrefix,1:nChains)
 	temperatures <- heats
 	myChain <- 1
-	sink('sampler.log')
+	sink(paste0(outPrefix,'-sampler.log'))
 	foreach(myChain=1:nChains) %dopar% {
 		outDir <- outputDirs[myChain]
 		myHeat <- temperatures[myChain]
@@ -1492,16 +1507,10 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 		myPair <- sample(nChains,2,replace = FALSE)
 		j1 <- myPair[1]
 		j2 <- myPair[2]
-		cat(paste0('chains ',j1,' and ',j2),'\n')
 		z1 <- currentZ[j1,]
 		z2 <- currentZ[j2,]
 		K1 <- currentK[j1]
 		K2 <- currentK[j2]
-		print(table(K1))
-		print(table(z1))
-		print("")
-		print(table(K2))
-		print(table(z2))
 
 		s1 <- rep(0,K1)
 		sx1 <- array(data = 0, dim = c(K1,d))
@@ -1533,14 +1542,14 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 			log.posterior <- log.posterior + sum(lgamma(alpha + sx2[k,]) + lgamma(beta + s2[k] - sx2[k,]))
 		}
 		logAR <- logAR + (temperatures[j1] - temperatures[j2])*log.posterior
-		cat(paste('logAR =',logAR),'\n')
+		#cat(paste('logAR =',logAR),'\n')
 		if( log(runif(1)) < logAR ){
 			ar <- ar + 1
 			currentZ[j1,] <- z2
 			currentZ[j2,] <- z1
 			currentK[j1] <- K2
 			currentK[j2] <- K1
-			cat(paste('switching.'),'\n')
+			#cat(paste('switching.'),'\n')
 		}
 		myChain <- 1
 		foreach(myChain=1:nChains) %dopar% {
@@ -1553,10 +1562,11 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves='M3',LS = FALSE)
 		}
 
-		matplot(sampledK[1:iter,],type = "l",lty = 1,lwd = 2, col = topo.colors(nChains))
-		legend('topleft',paste0('f(z,K|data)^{',round(heats,3),'}'),lty = 1, lwd = 2, col = topo.colors(nChains))
-		write(paste0('chain switching acceptance rate: ',100*round(ar/iter,3),'%.'),stderr())
-		
+		if(iter %% (m/100) == 0){
+			matplot(sampledK[1:iter,],type = "l",lty = 1,lwd = 2, col = topo.colors(nChains))
+			legend('topleft',paste0('f(z,K|data)^{',round(heats,3),'}'),lty = 1, lwd = 2, col = topo.colors(nChains))
+			write(paste0(100*iter/m,'% completed. Chain switching acceptance rate: ',100*round(ar/iter,3),'%.'),stderr())
+		}
 		kk <- as.numeric(read.table(paste0(outPrefix,"1/K.txt"))[1,])
 		cat(kk,"\n",file=conK)
 		theta <- as.numeric(read.table(paste0(outPrefix,"1/theta.varK.txt"))[1,])
@@ -1573,6 +1583,9 @@ coupledMetropolis <- function(nChains,heats,binaryData,outPrefix,ClusterPrior,m,
 	close(conP)
 	close(conZ)
 	write.table(sampledK, file = paste0(outPrefix,"/K.allChains.txt"), col.names = paste0('chain.',1:nChains),quote=FALSE,row.names = FALSE)
+	for(k in 1:nChains){
+		unlink(paste0(outPrefix,k), recursive=TRUE)
+	}
 	sink()
 
 }
