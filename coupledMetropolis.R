@@ -1038,9 +1038,9 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 				sNew <- rbind(sNew1,sNew2)
 				logAR <- log(nOld[1]) - log(nOld[2] + randomSize) -( lgamma(nOld[1] - randomSize + 1) + lgamma(nOld[2]+ randomSize + 1) - lgamma(nOld[2] + 1) - lgamma(nOld[1] + 1))
 				for(i in 1:2){
-					logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
+					logAR <- logAR + heat*d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + heat*sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
 				}
-				logAR <- logAR + sum(lgamma(gamma[myPair] + nNew)) - sum(lgamma(gamma[myPair] + nOld)) 
+				logAR <- logAR + heat*sum(lgamma(gamma[myPair] + nNew)) - heat*sum(lgamma(gamma[myPair] + nOld)) 
 				if( log(runif(1)) < logAR ){
 					reallocationAcceptanceRatio2 <- reallocationAcceptanceRatio2 + 1 
 					z <- propZ
@@ -1498,6 +1498,9 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	conZ = file(z.file,open = "w")
 	conP = file(p.file,open = "w")
 	ar <- 0
+	metMoves <- vector('list',length = nChains)
+	metMoves[[1]] <- c('M1','M2','M3','M4')
+	for(j in 2:nChains){metMoves[[j]] <- c('M2','M3')}
 	for(iter in 1:ITERATIONS){
 		for(myChain in 1:nChains){
 			currentZ[myChain,] <- as.numeric(read.table(paste0(outPrefix,myChain,'/z.varK.txt'))[1,])
@@ -1559,7 +1562,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 			zStart <- currentZ[myChain,]
 			allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10, burn= 9, data = binaryData, 
 						thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = 0.2, 
-						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves='M3',LS = FALSE)
+						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves =  metMoves[[myChain]],LS = FALSE)
 		}
 
 		if(iter %% (m/100) == 0){
