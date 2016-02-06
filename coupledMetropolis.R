@@ -1615,6 +1615,7 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 			tt <- read.table("theta.varK.txt")
 			index <- which(kFile == K)
 			d <- dim(x)[2]
+			n <- dim(x)[1]
 			J <- d + 1
 			m <- length(index)
 			mcmc <- array(data = NA, dim = c(m,K,J))
