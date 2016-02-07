@@ -1437,7 +1437,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 
 library('foreach')
 library('doMC')
-coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma){
+coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true){
 	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
 	if(missing(heats) == TRUE){heats <- seq(1,0.3,length = nChains)}else{
 		if(heats[1] != 1){stop(cat(paste("    [ERROR]: `heats[1]` should be equal to one."), "\n"))}
@@ -1453,7 +1453,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	if (length(table(gamma)) > 1){
 		stop(cat(paste("    [ERROR]: Dirichlet prior parameters should be the same."), "\n"))
 	}
-
+	if(missing(controlCriterion) == TRUE){controlCriterion <- TRUE}
 	d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
 	if(ClusterPrior == "uniform"){
 		priorK <- rep(log(1/Kmax),Kmax)
@@ -1501,6 +1501,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	metMoves <- vector('list',length = nChains)
 	metMoves[[1]] <- c('M1','M2','M3','M4')
 	for(j in 2:nChains){metMoves[[j]] <- c('M2','M3')}
+	localAR <- 0	#every 10 iterations
 	for(iter in 1:ITERATIONS){
 		for(myChain in 1:nChains){
 			currentZ[myChain,] <- as.numeric(read.table(paste0(outPrefix,myChain,'/z.varK.txt'))[1,])
@@ -1548,6 +1549,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		#cat(paste('logAR =',logAR),'\n')
 		if( log(runif(1)) < logAR ){
 			ar <- ar + 1
+			localAR <- localAR + 1
 			currentZ[j1,] <- z2
 			currentZ[j2,] <- z1
 			currentK[j1] <- K2
@@ -1578,7 +1580,18 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		cat(z,"\n",file=conZ)
 		p <- as.numeric(read.table(paste0(outPrefix,"1/p.varK.txt"))[1,])
 		cat(p,"\n",file=conP)		
-
+		if((controlCriterion == TRUE) && (length(table(heats)) > 1) && (iter %% 10 == 0)){
+			write(paste0('     localAR: ', localAR/10),stderr())
+			lastTemperature <- heats[nChains]
+			if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
+						lastTemperature <- lastTemperature - 0.1 + 0.2*runif(1); 
+						lastTemperature <- max(0.01, lastTemperature);
+						lastTemperature <- min(0.98, lastTemperature); 
+						write(paste0('     new temperature: ', lastTemperature),stderr())
+					}
+			temperatures <- heats <- seq(1, lastTemperature, length = nChains)
+			localAR <- 0
+		}
 
 	}
 	close(conK)
@@ -1590,7 +1603,11 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		unlink(paste0(outPrefix,k), recursive=TRUE)
 	}
 	sink()
-
+	if(missing(z.true) == TRUE){
+		dealWithLabelSwitching(outDir = outPrefix, binaryData = binaryData)
+	}else{
+		dealWithLabelSwitching(outDir = outPrefix, binaryData = binaryData, z.true = z.true)
+	}
 }
 
 
