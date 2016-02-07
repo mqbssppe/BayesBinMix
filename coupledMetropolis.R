@@ -1439,7 +1439,7 @@ library('foreach')
 library('doMC')
 coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true){
 	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
-	if(missing(heats) == TRUE){heats <- seq(1,0.3,length = nChains)}else{
+	if(missing(heats) == TRUE){heats <- seq(1,0.2,length = nChains)}else{
 		if(heats[1] != 1){stop(cat(paste("    [ERROR]: `heats[1]` should be equal to one."), "\n"))}
 	}
 	if(length(heats) != nChains){
@@ -1453,7 +1453,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	if (length(table(gamma)) > 1){
 		stop(cat(paste("    [ERROR]: Dirichlet prior parameters should be the same."), "\n"))
 	}
-	if(missing(controlCriterion) == TRUE){controlCriterion <- TRUE}
+	if(missing(controlCriterion) == TRUE){controlCriterion <- FALSE}
 	d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
 	if(ClusterPrior == "uniform"){
 		priorK <- rep(log(1/Kmax),Kmax)
