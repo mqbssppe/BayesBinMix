@@ -1584,7 +1584,8 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 			write(paste0('     localAR: ', localAR/10),stderr())
 			lastTemperature <- heats[nChains]
 			if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
-						lastTemperature <- lastTemperature - 0.1 + 0.2*runif(1); 
+						#lastTemperature <- lastTemperature - 0.1 + 0.2*runif(1);
+						lastTemperature <- runif(1) 
 						lastTemperature <- max(0.01, lastTemperature);
 						lastTemperature <- min(0.98, lastTemperature); 
 						write(paste0('     new temperature: ', lastTemperature),stderr())
