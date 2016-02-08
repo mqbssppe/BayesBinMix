@@ -1439,7 +1439,9 @@ library('foreach')
 library('doMC')
 coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true){
 	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
-	if(missing(heats) == TRUE){heats <- seq(1,0.2,length = nChains)}else{
+	if(missing(heats) == TRUE){
+		heats <- seq(1,0.1,length = nChains)
+		}else{
 		if(heats[1] != 1){stop(cat(paste("    [ERROR]: `heats[1]` should be equal to one."), "\n"))}
 	}
 	if(length(heats) != nChains){
@@ -1582,15 +1584,17 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		cat(p,"\n",file=conP)		
 		if((controlCriterion == TRUE) && (length(table(heats)) > 1) && (iter %% 10 == 0)){
 			write(paste0('     localAR: ', localAR/10),stderr())
-			lastTemperature <- heats[nChains]
+			#dt <- 1/(1 + 100*((1:nChains)-1))
+			#lastTemperature <- heats[nChains]
 			if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
-						#lastTemperature <- lastTemperature - 0.1 + 0.2*runif(1);
-						lastTemperature <- runif(1) 
-						lastTemperature <- max(0.01, lastTemperature);
-						lastTemperature <- min(0.98, lastTemperature); 
+						#lastTemperature <- runif(1) 
+						#lastTemperature <- max(0.01, lastTemperature);
+						#lastTemperature <- min(0.98, lastTemperature); 
+						lastTemperature <- 10*runif(1)
 						write(paste0('     new temperature: ', lastTemperature),stderr())
 					}
-			temperatures <- heats <- seq(1, lastTemperature, length = nChains)
+			#temperatures <- heats <- seq(1, lastTemperature, length = nChains)
+			temperatures <- heats <- 1/(1 + lastTemperature*((1:nChains)-1))
 			localAR <- 0
 		}
 
