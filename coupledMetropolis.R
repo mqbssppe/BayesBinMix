@@ -1437,7 +1437,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 
 library('foreach')
 library('doMC')
-coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true){
+coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true, ejectionAlpha){
 	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
 	if(missing(heats) == TRUE){
 		heats <- seq(1,0.1,length = nChains)
@@ -1466,7 +1466,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 			priorK[k] <- dpois(k,lambda = 1, log = TRUE) - denom 
 		}
 	}
-
+	if(missing(ejectionAlpha) == TRUE){ejectionAlpha <- 0.2}
 
 	currentZ <- array(data = NA, dim = c(nChains,n))
 	currentK <- numeric(nChains)
@@ -1482,7 +1482,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		outDir <- outputDirs[myChain]
 		myHeat <- temperatures[myChain]
 		allocationSamplerBinMix( alpha = 1, beta = 1, gamma = rep(1,Kmax), m = 10, burn= 9, data = binaryData, 
-					thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = 0.2, 
+					thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
 					outputDir = outDir,Kstart=1,heat=myHeat,metropolisMoves='M3',LS = FALSE)
 	}
 
@@ -1565,7 +1565,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 			Kstart <- currentK[myChain]
 			zStart <- currentZ[myChain,]
 			allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10, burn= 9, data = binaryData, 
-						thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = 0.2, 
+						thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
 						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves =  metMoves[[myChain]],LS = FALSE)
 		}
 
