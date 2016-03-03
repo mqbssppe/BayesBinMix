@@ -1707,7 +1707,7 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 			write.table(mcmc, file = paste("rawMCMC.mapK.",K,".txt",sep=""),col.names = c(paste(rep(paste(expression(theta),1:K,sep="."),d),rep(1:d,each=K),sep="-"),paste('p',1:K,sep=".")))
 			write.table(file = paste("reorderedSingleBestClusterings.mapK.",K,".txt",sep=""),t(ls$clusters[c(1,2,3),]),row.names = paste("z",1:n,sep="."))
 
-			#reordering allocations
+			#reordering allocations 
 			allocationsECR <- allocationsKL <- allocationsECR.ITERATIVE1 <- allocations
 			for (i in 1:m){
 				myPerm <- order(ls$permutations$"ECR"[i,])
@@ -1718,6 +1718,15 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 				allocationsECR.ITERATIVE1[i,] <- myPerm[allocations[i,]]
 
 			}
+		       MeanReorderedpMatrix <- array(data = 0, dim = c(n,K))    # define object that will contain the classification probs
+		       for (i in 1:m){
+				myPerm <- ls$permutations$"ECR"[i,]   # this is the permutation of labels for iteration i according to ECR algorithm
+				MeanReorderedpMatrix <- MeanReorderedpMatrix + pMatrix[i, ,myPerm]   # apply myPerm to the columns of pMatrix for given iteration and add the permuted matrix to MeanReorderedpMatrix
+			}
+			MeanReorderedpMatrix <- MeanReorderedpMatrix/m    # this is the final estimate of classification probabilities. 
+			write.csv(MeanReorderedpMatrix, file = paste0("classificationProbabilities.mapK.",K,".csv"), row.names = FALSE)
+
+
 			write.table(allocationsECR, file = paste("z.ECR.mapK.",K,".txt",sep=""))
 			write.table(allocationsKL, file = paste("z.KL.mapK.",K,".txt",sep=""))
 			write.table(allocationsECR.ITERATIVE1, file = paste("z.ECR-ITERATIVE1.mapK.",K,".txt",sep=""))
