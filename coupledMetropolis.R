@@ -1671,24 +1671,47 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 				if(ll > maxLL){maxLL <- ll;maxIter <- iter;cat(paste("Found new Complete MLE: ", ll,sep=""),"\n")}
 			}
 			# classification probs
+			#####OLD 
+#			ptm <- proc.time()
+#			pMatrix <- array(data = NA, dim = c(m,n,K))
+#			l <- numeric(K)
+#			for (iter in 1:m){
+#				p <- mcmc[iter,,J]
+#				theta <- array( mcmc[iter,,1:(J-1)],dim = c(K,J-1) )
+#				for(i in 1:n){
+#					for(k in 1:K){
+#						l[k] <- log(p[k]) + sum(x[i,]*log(theta[k,]) + (1-x[i,])*log(1-theta[k,]))
+#					}
+#					for(k in 1:K){
+#						pMatrix[iter,i,k] <- 1/sum(exp(l - l[k]))
+#						if(is.na(pMatrix[iter,i,k]) == TRUE){pMatrix[iter,i,k] = 0}
+#					}
+#				}
+#				if(iter %% 1000 == 0){cat(paste(" classification probs: ",100*round(iter/m,3),"% completed",sep=""),"\n");}
+#			}
+#			cat(paste0("proc.time for classification probabalities1: ", round(as.numeric((proc.time() - ptm)[3]),2)),"\n")
+			#####NEW 
+			ptm <- proc.time()
 			pMatrix <- array(data = NA, dim = c(m,n,K))
-			l <- numeric(K)
+			l <- array(data = 0, dim = c(n,K))
 			for (iter in 1:m){
-				p <- mcmc[iter,,J]
-				theta <- array( mcmc[iter,,1:(J-1)],dim = c(K,J-1) )
-				for(i in 1:n){
+				LOG.P <- log(mcmc[iter,,J])
+				LOG.THETA <- array(log(mcmc[iter,,1:(J-1)]),dim = c(K,J-1) )
+				LOG.1_MINUS_THETA <- array(log(1 - mcmc[iter,,1:(J-1)]),dim = c(K,J-1) )
 					for(k in 1:K){
-						l[k] <- log(p[k]) + sum(x[i,]*log(theta[k,]) + (1-x[i,])*log(1-theta[k,]))
+						l[,k] <- LOG.P[k] + rowSums( x * matrix(LOG.THETA[k,], nrow = n, ncol = J - 1, byrow = TRUE) + (1-x)*matrix(LOG.1_MINUS_THETA[k,], nrow = n, ncol = J - 1, byrow = TRUE))
 					}
 					for(k in 1:K){
-						pMatrix[iter,i,k] <- 1/sum(exp(l - l[k]))
-						if(is.na(pMatrix[iter,i,k]) == TRUE){pMatrix[iter,i,k] = 0}
+						pMatrix[iter,,k] <- apply(l,1,function(y){return(1/sum(exp(y - y[k])))} )
+						ind <- which(is.na(pMatrix[iter,,k]) == TRUE) 
+						nInd <- length(ind)
+						if(nInd > 0){pMatrix[iter,ind,k] <- rep(0,nInd)}
 					}
-				}
+				
 				if(iter %% 1000 == 0){cat(paste(" classification probs: ",100*round(iter/m,3),"% completed",sep=""),"\n");}
 			}
 
-
+			cat(paste0("proc.time for classification probabalities2: ", round(as.numeric((proc.time() - ptm)[3]),2)),"\n")
 			if(missing(z.true)==TRUE){
 				ls <- label.switching( method = c("STEPHENS","ECR","ECR-ITERATIVE-1"),
 							zpivot = allocations[maxIter,], z = allocations,K = K, complete = complete.loglikelihood, data = x,
@@ -1718,8 +1741,8 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 				allocationsECR.ITERATIVE1[i,] <- myPerm[allocations[i,]]
 
 			}
-		       MeanReorderedpMatrix <- array(data = 0, dim = c(n,K))    # define object that will contain the classification probs
-		       for (i in 1:m){
+			MeanReorderedpMatrix <- array(data = 0, dim = c(n,K))    # define object that will contain the classification probs
+			for (i in 1:m){
 				myPerm <- ls$permutations$"ECR"[i,]   # this is the permutation of labels for iteration i according to ECR algorithm
 				MeanReorderedpMatrix <- MeanReorderedpMatrix + pMatrix[i, ,myPerm]   # apply myPerm to the columns of pMatrix for given iteration and add the permuted matrix to MeanReorderedpMatrix
 			}
