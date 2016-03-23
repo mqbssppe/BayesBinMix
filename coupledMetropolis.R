@@ -1467,7 +1467,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		}
 	}
 	if(missing(ejectionAlpha) == TRUE){ejectionAlpha <- 0.2}
-
+	x <- binaryData
 	currentZ <- array(data = NA, dim = c(nChains,n))
 	currentK <- numeric(nChains)
 
