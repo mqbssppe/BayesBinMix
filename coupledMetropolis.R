@@ -1100,7 +1100,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 #			for(i in 1:2){
 #				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
 #			}
-			logAR <- logAR + heat*sum(lgamma(gamma[myPair] + nNew)) - heat*sum(lgamma(gamma[myPair[1]] + nOld[1])) + heat*lgamma(sum(gamma[1:(K+1)])) - heat*lgamma(sum(gamma[1:K])) - heat*lgamma(sum(gamma[1:(K+1)]) + n) + heat*lgamma(sum(gamma[1:K]) + n) - heat*lgamma(gamma[K+1])
+			logAR <- logAR + heat*sum(lgamma(gamma[myPair] + nNew)) - heat*sum(lgamma(gamma[myPair[1]] + nOld[1])) + heat*lgamma(sum(gamma[1:(K+1)])) - heat*lgamma(sum(gamma[1:K])) - heat*lgamma(sum(gamma[1:(K+1)]) + n) + heat*lgamma(sum(gamma[1:K]) + n) - heat*lgamma(gamma[K+1]) - heat*d*lbeta(alpha, beta)
 		}else{
 		# DEATH MOVE
 			birth = FALSE
@@ -1133,7 +1133,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 #			for(i in 1:2){
 #				logAR <- logAR + d*(lgamma(alpha + beta + nOld[i]) - lgamma(alpha + beta + nNew[i]) ) + sum(lgamma(alpha + sNew[i,]) + lgamma(beta + nNew[i] - sNew[i,]) - lgamma(alpha + sOld[i,]) - lgamma(beta + nOld[i] - sOld[i,]))
 #			}
-			logAR <- logAR + heat*lgamma(gamma[myPair[1]] + nNew[1]) - heat*sum(lgamma(gamma[myPair] + nOld)) + heat*lgamma(sum(gamma[1:(K-1)])) - heat*lgamma(sum(gamma[1:K])) - heat*lgamma(sum(gamma[1:(K-1)]) + n) + heat*lgamma(sum(gamma[1:K]) + n) + heat*lgamma(gamma[K])
+			logAR <- logAR + heat*lgamma(gamma[myPair[1]] + nNew[1]) - heat*sum(lgamma(gamma[myPair] + nOld)) + heat*lgamma(sum(gamma[1:(K-1)])) - heat*lgamma(sum(gamma[1:K])) - heat*lgamma(sum(gamma[1:(K-1)]) + n) + heat*lgamma(sum(gamma[1:K]) + n) + heat*lgamma(gamma[K]) + heat*d*lbeta(alpha, beta)
 			
 		}
 
@@ -1541,12 +1541,16 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 		for(k in 1:K1){
 			log.posterior <- log.posterior + sum(lgamma(alpha + sx1[k,]) + lgamma(beta + s1[k] - sx1[k,]))
 		}
+		#prior constants1:
+		log.posterior <- log.posterior + lgamma(sum(gamma[1:K1])) - sum(lgamma(gamma[1:K1])) - K1*d*lbeta(alpha, beta)
 		logAR <- (temperatures[j2] - temperatures[j1])*log.posterior
 		#compute log-posterior for 2nd
 		log.posterior <- priorK[K2] + sum(lgamma( gamma[1:K2] + s2 )) - d*sum(lgamma(alpha+beta+s2)) - lgamma(n + sum(gamma[1:K2]))
 		for(k in 1:K2){
 			log.posterior <- log.posterior + sum(lgamma(alpha + sx2[k,]) + lgamma(beta + s2[k] - sx2[k,]))
 		}
+		#prior constants2:
+		log.posterior <- log.posterior + lgamma(sum(gamma[1:K2])) - sum(lgamma(gamma[1:K2])) - K2*d*lbeta(alpha, beta)
 		logAR <- logAR + (temperatures[j1] - temperatures[j2])*log.posterior
 		#cat(paste('logAR =',logAR),'\n')
 		if( log(runif(1)) < logAR ){
