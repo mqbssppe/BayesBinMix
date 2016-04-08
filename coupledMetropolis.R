@@ -1481,7 +1481,7 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	foreach(myChain=1:nChains) %dopar% {
 		outDir <- outputDirs[myChain]
 		myHeat <- temperatures[myChain]
-		allocationSamplerBinMix( alpha = 1, beta = 1, gamma = rep(1,Kmax), m = 10, burn= 9, data = binaryData, 
+		allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = rep(gamma,Kmax), m = 10, burn= 9, data = binaryData, 
 					thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
 					outputDir = outDir,Kstart=1,heat=myHeat,metropolisMoves='M3',LS = FALSE)
 	}
