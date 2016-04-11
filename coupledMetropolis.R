@@ -736,7 +736,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 #	if(dir.exists(outputDir) == TRUE){
 #		stop(cat(paste("    [ERROR]: directory exists, please provide different name."), "\n"))
 #	}
-	dir.create(outputDir)
+	 #dir.create(outputDir)
 	setwd(outputDir)
 	cat(paste0("changing working directory to ",outputDir),"\n")
 	if (missing(m)) {stop(cat(paste("    [ERROR]: number of MCMC iterations (m) not provided."), "\n"))}
@@ -1470,148 +1470,169 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	x <- binaryData
 	currentZ <- array(data = NA, dim = c(nChains,n))
 	currentK <- numeric(nChains)
-
-
-
-	registerDoMC(nChains)
-	outputDirs <- paste0(outPrefix,1:nChains)
-	temperatures <- heats
-	myChain <- 1
-	sink(paste0(outPrefix,'-sampler.log'))
-	foreach(myChain=1:nChains) %dopar% {
-		outDir <- outputDirs[myChain]
-		myHeat <- temperatures[myChain]
-		allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10, burn= 9, data = binaryData, 
-					thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
-					outputDir = outDir,Kstart=1,heat=myHeat,metropolisMoves='M3',LS = FALSE)
+	# check if dir exists and stop in this case
+	myCheck <- match(outPrefix,list.files())
+	if(is.na(myCheck) == FALSE){
+		stop(cat(paste("    [ERROR]: directory exists, please provide different name to outPrefix."), "\n"))
 	}
 
 
 
-	ITERATIONS <- m
-	sampledK <- array(data = 0, dim = c(ITERATIONS,nChains))
-	dir.create(outPrefix)
-	k.file <- paste0(outPrefix,"/K.txt")
-	theta.file <- paste0(outPrefix,"/theta.varK.txt")
-	z.file <- paste0(outPrefix,"/z.varK.txt")
-	p.file <- paste0(outPrefix,"/p.varK.txt")
-	conK = file(k.file,open = "w")
-	conTheta = file(theta.file,open = "w")
-	conZ = file(z.file,open = "w")
-	conP = file(p.file,open = "w")
-	ar <- 0
-	metMoves <- vector('list',length = nChains)
-	metMoves[[1]] <- c('M1','M2','M3','M4')
-	for(j in 2:nChains){metMoves[[j]] <- c('M2','M3')}
-	localAR <- 0	#every 10 iterations
-	for(iter in 1:ITERATIONS){
-		for(myChain in 1:nChains){
-			currentZ[myChain,] <- as.numeric(read.table(paste0(outPrefix,myChain,'/z.varK.txt'))[1,])
-			currentK[myChain] <- read.table(paste0(outPrefix,myChain,'/K.txt'))[1,]
-		}
-		sampledK[iter,] <- currentK
-		myPair <- sample(nChains,2,replace = FALSE)
-		j1 <- myPair[1]
-		j2 <- myPair[2]
-		z1 <- currentZ[j1,]
-		z2 <- currentZ[j2,]
-		K1 <- currentK[j1]
-		K2 <- currentK[j2]
+	if(nChains < 2){
+		cat(paste("            Only 1 chain? Well."),"\n")
+		dir.create(outPrefix)
+		myHeat <- 1
+		allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10*m, burn= 9, data = binaryData, 
+					thinning = 10,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
+					outputDir = outPrefix,Kstart = 1,heat=myHeat,metropolisMoves = c('M1','M2','M3','M4'),LS = FALSE)}
+	else{
 
-		s1 <- rep(0,K1)
-		sx1 <- array(data = 0, dim = c(K1,d))
-		for(k in 1:K1){
-			ind <- which(z1 == k)
-			s1[k] <- length(ind)
-			if(s1[k] > 0){
-				sx1[k,] <- colSums(array(x[ind,],dim = c(s1[k],d)))
-			}
-		}
-		s2 <- rep(0,K2)
-		sx2 <- array(data = 0, dim = c(K2,d))
-		for(k in 1:K2){
-			ind <- which(z2 == k)
-			s2[k] <- length(ind)
-			if(s2[k] > 0){
-				sx2[k,] <- colSums(array(x[ind,],dim = c(s2[k],d)))
-			}
-		}
-		#compute log-posterior for 1st
-		log.posterior <- priorK[K1] + sum(lgamma( gamma[1:K1] + s1 )) - d*sum(lgamma(alpha+beta+s1)) - lgamma(n + sum(gamma[1:K1]))
-		for(k in 1:K1){
-			log.posterior <- log.posterior + sum(lgamma(alpha + sx1[k,]) + lgamma(beta + s1[k] - sx1[k,]))
-		}
-		#prior constants1:
-		log.posterior <- log.posterior + lgamma(sum(gamma[1:K1])) - sum(lgamma(gamma[1:K1])) - K1*d*lbeta(alpha, beta)
-		logAR <- (temperatures[j2] - temperatures[j1])*log.posterior
-		#compute log-posterior for 2nd
-		log.posterior <- priorK[K2] + sum(lgamma( gamma[1:K2] + s2 )) - d*sum(lgamma(alpha+beta+s2)) - lgamma(n + sum(gamma[1:K2]))
-		for(k in 1:K2){
-			log.posterior <- log.posterior + sum(lgamma(alpha + sx2[k,]) + lgamma(beta + s2[k] - sx2[k,]))
-		}
-		#prior constants2:
-		log.posterior <- log.posterior + lgamma(sum(gamma[1:K2])) - sum(lgamma(gamma[1:K2])) - K2*d*lbeta(alpha, beta)
-		logAR <- logAR + (temperatures[j1] - temperatures[j2])*log.posterior
-		#cat(paste('logAR =',logAR),'\n')
-		if( log(runif(1)) < logAR ){
-			ar <- ar + 1
-			localAR <- localAR + 1
-			currentZ[j1,] <- z2
-			currentZ[j2,] <- z1
-			currentK[j1] <- K2
-			currentK[j2] <- K1
-			#cat(paste('switching.'),'\n')
-		}
+
+		registerDoMC(nChains)
+		outputDirs <- paste0(outPrefix,1:nChains)
+		temperatures <- heats
 		myChain <- 1
+		for(i in 1:nChains){
+			cat(paste0("            Create temporary directory: \'",outPrefix,i,"\'."), "\n")
+		}
+		cat(paste0("    [NOTE]: screen output from multiple threads is redirected to \'",outPrefix,"-sampler.log\'."), "\n")
+		sink(paste0(outPrefix,'-sampler.log'))
 		foreach(myChain=1:nChains) %dopar% {
 			outDir <- outputDirs[myChain]
+			dir.create(outDir)
 			myHeat <- temperatures[myChain]
-			Kstart <- currentK[myChain]
-			zStart <- currentZ[myChain,]
 			allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10, burn= 9, data = binaryData, 
 						thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
-						outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves =  metMoves[[myChain]],LS = FALSE)
+						outputDir = outDir,Kstart=1,heat=myHeat,metropolisMoves='M3',LS = FALSE)
 		}
 
-		if(iter %% (m/100) == 0){
-			matplot(sampledK[1:iter,],type = "l",lty = 1,lwd = 2, col = topo.colors(nChains))
-			legend('topleft',paste0('f(z,K|data)^{',round(heats,3),'}'),lty = 1, lwd = 2, col = topo.colors(nChains))
-			write(paste0(100*iter/m,'% completed. Chain switching acceptance rate: ',100*round(ar/iter,3),'%.'),stderr())
-		}
-		kk <- as.numeric(read.table(paste0(outPrefix,"1/K.txt"))[1,])
-		cat(kk,"\n",file=conK)
-		theta <- as.numeric(read.table(paste0(outPrefix,"1/theta.varK.txt"))[1,])
-		cat(theta,"\n",file=conTheta)
-		z <- as.numeric(read.table(paste0(outPrefix,"1/z.varK.txt"))[1,])
-		cat(z,"\n",file=conZ)
-		p <- as.numeric(read.table(paste0(outPrefix,"1/p.varK.txt"))[1,])
-		cat(p,"\n",file=conP)		
-		if((controlCriterion == TRUE) && (length(table(heats)) > 1) && (iter %% 10 == 0)){
-			write(paste0('     localAR: ', localAR/10),stderr())
-			#dt <- 1/(1 + 100*((1:nChains)-1))
-			#lastTemperature <- heats[nChains]
-			if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
-						#lastTemperature <- runif(1) 
-						#lastTemperature <- max(0.01, lastTemperature);
-						#lastTemperature <- min(0.98, lastTemperature); 
-						lastTemperature <- 10*runif(1)
-						write(paste0('     new temperature: ', lastTemperature),stderr())
-					}
-			#temperatures <- heats <- seq(1, lastTemperature, length = nChains)
-			temperatures <- heats <- 1/(1 + lastTemperature*((1:nChains)-1))
-			localAR <- 0
-		}
 
+
+		ITERATIONS <- m
+		sampledK <- array(data = 0, dim = c(ITERATIONS,nChains))
+		dir.create(outPrefix)
+		k.file <- paste0(outPrefix,"/K.txt")
+		theta.file <- paste0(outPrefix,"/theta.varK.txt")
+		z.file <- paste0(outPrefix,"/z.varK.txt")
+		p.file <- paste0(outPrefix,"/p.varK.txt")
+		conK = file(k.file,open = "w")
+		conTheta = file(theta.file,open = "w")
+		conZ = file(z.file,open = "w")
+		conP = file(p.file,open = "w")
+		ar <- 0
+		metMoves <- vector('list',length = nChains)
+		metMoves[[1]] <- c('M1','M2','M3','M4')
+		for(j in 2:nChains){metMoves[[j]] <- c('M2','M3')}
+		localAR <- 0	#every 10 iterations
+		for(iter in 1:ITERATIONS){
+			for(myChain in 1:nChains){
+				currentZ[myChain,] <- as.numeric(read.table(paste0(outPrefix,myChain,'/z.varK.txt'))[1,])
+				currentK[myChain] <- read.table(paste0(outPrefix,myChain,'/K.txt'))[1,]
+			}
+			sampledK[iter,] <- currentK
+			myPair <- sample(nChains,2,replace = FALSE)
+			j1 <- myPair[1]
+			j2 <- myPair[2]
+			z1 <- currentZ[j1,]
+			z2 <- currentZ[j2,]
+			K1 <- currentK[j1]
+			K2 <- currentK[j2]
+
+			s1 <- rep(0,K1)
+			sx1 <- array(data = 0, dim = c(K1,d))
+			for(k in 1:K1){
+				ind <- which(z1 == k)
+				s1[k] <- length(ind)
+				if(s1[k] > 0){
+					sx1[k,] <- colSums(array(x[ind,],dim = c(s1[k],d)))
+				}
+			}
+			s2 <- rep(0,K2)
+			sx2 <- array(data = 0, dim = c(K2,d))
+			for(k in 1:K2){
+				ind <- which(z2 == k)
+				s2[k] <- length(ind)
+				if(s2[k] > 0){
+					sx2[k,] <- colSums(array(x[ind,],dim = c(s2[k],d)))
+				}
+			}
+			#compute log-posterior for 1st
+			log.posterior <- priorK[K1] + sum(lgamma( gamma[1:K1] + s1 )) - d*sum(lgamma(alpha+beta+s1)) - lgamma(n + sum(gamma[1:K1]))
+			for(k in 1:K1){
+				log.posterior <- log.posterior + sum(lgamma(alpha + sx1[k,]) + lgamma(beta + s1[k] - sx1[k,]))
+			}
+			#prior constants1:
+			log.posterior <- log.posterior + lgamma(sum(gamma[1:K1])) - sum(lgamma(gamma[1:K1])) - K1*d*lbeta(alpha, beta)
+			logAR <- (temperatures[j2] - temperatures[j1])*log.posterior
+			#compute log-posterior for 2nd
+			log.posterior <- priorK[K2] + sum(lgamma( gamma[1:K2] + s2 )) - d*sum(lgamma(alpha+beta+s2)) - lgamma(n + sum(gamma[1:K2]))
+			for(k in 1:K2){
+				log.posterior <- log.posterior + sum(lgamma(alpha + sx2[k,]) + lgamma(beta + s2[k] - sx2[k,]))
+			}
+			#prior constants2:
+			log.posterior <- log.posterior + lgamma(sum(gamma[1:K2])) - sum(lgamma(gamma[1:K2])) - K2*d*lbeta(alpha, beta)
+			logAR <- logAR + (temperatures[j1] - temperatures[j2])*log.posterior
+			#cat(paste('logAR =',logAR),'\n')
+			if( log(runif(1)) < logAR ){
+				ar <- ar + 1
+				localAR <- localAR + 1
+				currentZ[j1,] <- z2
+				currentZ[j2,] <- z1
+				currentK[j1] <- K2
+				currentK[j2] <- K1
+				#cat(paste('switching.'),'\n')
+			}
+			myChain <- 1
+			foreach(myChain=1:nChains) %dopar% {
+				outDir <- outputDirs[myChain]
+				myHeat <- temperatures[myChain]
+				Kstart <- currentK[myChain]
+				zStart <- currentZ[myChain,]
+				allocationSamplerBinMix( alpha = alpha, beta = beta, gamma = gamma, m = 10, burn= 9, data = binaryData, 
+							thinning = 1,Kmax = Kmax, ClusterPrior = ClusterPrior,ejectionAlpha = ejectionAlpha, 
+							outputDir = outDir,Kstart=Kstart,zStart = zStart, heat=myHeat,metropolisMoves =  metMoves[[myChain]],LS = FALSE)
+			}
+
+			if(iter %% (m/100) == 0){
+				matplot(sampledK[1:iter,],type = "l",lty = 1,lwd = 2, col = topo.colors(nChains))
+				legend('topleft',paste0('f(z,K|data)^{',round(heats,3),'}'),lty = 1, lwd = 2, col = topo.colors(nChains))
+				write(paste0(100*iter/m,'% completed. Chain switching acceptance rate: ',100*round(ar/iter,3),'%.'),stderr())
+			}
+			kk <- as.numeric(read.table(paste0(outPrefix,"1/K.txt"))[1,])
+			cat(kk,"\n",file=conK)
+			theta <- as.numeric(read.table(paste0(outPrefix,"1/theta.varK.txt"))[1,])
+			cat(theta,"\n",file=conTheta)
+			z <- as.numeric(read.table(paste0(outPrefix,"1/z.varK.txt"))[1,])
+			cat(z,"\n",file=conZ)
+			p <- as.numeric(read.table(paste0(outPrefix,"1/p.varK.txt"))[1,])
+			cat(p,"\n",file=conP)		
+			if((controlCriterion == TRUE) && (length(table(heats)) > 1) && (iter %% 10 == 0)){
+				write(paste0('     localAR: ', localAR/10),stderr())
+				#dt <- 1/(1 + 100*((1:nChains)-1))
+				#lastTemperature <- heats[nChains]
+				if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
+							#lastTemperature <- runif(1) 
+							#lastTemperature <- max(0.01, lastTemperature);
+							#lastTemperature <- min(0.98, lastTemperature); 
+							lastTemperature <- 10*runif(1)
+							write(paste0('     new temperature: ', lastTemperature),stderr())
+						}
+				#temperatures <- heats <- seq(1, lastTemperature, length = nChains)
+				temperatures <- heats <- 1/(1 + lastTemperature*((1:nChains)-1))
+				localAR <- 0
+			}
+
+		}
+		close(conK)
+		close(conTheta)
+		close(conP)
+		close(conZ)
+		write.table(sampledK, file = paste0(outPrefix,"/K.allChains.txt"), col.names = paste0('chain.',1:nChains),quote=FALSE,row.names = FALSE)
+		for(k in 1:nChains){
+			unlink(paste0(outPrefix,k), recursive=TRUE)
+		}
+		sink()
 	}
-	close(conK)
-	close(conTheta)
-	close(conP)
-	close(conZ)
-	write.table(sampledK, file = paste0(outPrefix,"/K.allChains.txt"), col.names = paste0('chain.',1:nChains),quote=FALSE,row.names = FALSE)
-	for(k in 1:nChains){
-		unlink(paste0(outPrefix,k), recursive=TRUE)
-	}
-	sink()
 	if(missing(z.true) == TRUE){
 		dealWithLabelSwitching(outDir = outPrefix, binaryData = binaryData)
 	}else{
@@ -1639,32 +1660,33 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 		kRange <- as.numeric(names(table(kFile)/length(kFile)))
 	}
 	for ( K in kRange ){
+
+		tt <- read.table("theta.varK.txt")
+		index <- which(kFile == K)
+		d <- dim(x)[2]
+		n <- dim(x)[1]
+		J <- d + 1
+		m <- length(index)
+		mcmc <- array(data = NA, dim = c(m,K,J))
+		Kmax <- (dim(tt)/d)[2]
+		for (j in 1:d){
+			for(k in 1:K){
+				mcmc[,k,j] <- tt[index,(j-1)*Kmax + k]
+			}
+		}
+		conP = file(p.file,open = "r")
+		i <- 0
+		j <- 0
+		while (length(oneLine <- readLines(conP, n = 1, warn = FALSE)) > 0) {
+			i <- i + 1
+			if(kFile[i] == K){
+				j <- j + 1
+				mcmc[j,,J] <- as.numeric(strsplit(oneLine,split = " ")[[1]])
+			}
+		}
+		close(conP)
 		if (K > 1){
 			cat(paste("Dealing with Label Switching for K =",K),"\n")
-			tt <- read.table("theta.varK.txt")
-			index <- which(kFile == K)
-			d <- dim(x)[2]
-			n <- dim(x)[1]
-			J <- d + 1
-			m <- length(index)
-			mcmc <- array(data = NA, dim = c(m,K,J))
-			Kmax <- (dim(tt)/d)[2]
-			for (j in 1:d){
-				for(k in 1:K){
-					mcmc[,k,j] <- tt[index,(j-1)*Kmax + k]
-				}
-			}
-			conP = file(p.file,open = "r")
-			i <- 0
-			j <- 0
-			while (length(oneLine <- readLines(conP, n = 1, warn = FALSE)) > 0) {
-				i <- i + 1
-				if(kFile[i] == K){
-					j <- j + 1
-					mcmc[j,,J] <- as.numeric(strsplit(oneLine,split = " ")[[1]])
-				}
-			}
-			close(conP)
 			allocations <- as.matrix(read.table("z.varK.txt",as.is = TRUE)[index,])
 			iter <- 1
 			ll <- complete.loglikelihood(x,allocations[iter,],mcmc[iter,,])
@@ -1715,7 +1737,7 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 				if(iter %% 1000 == 0){cat(paste(" classification probs: ",100*round(iter/m,3),"% completed",sep=""),"\n");}
 			}
 
-			cat(paste0("proc.time for classification probabalities2: ", round(as.numeric((proc.time() - ptm)[3]),2)),"\n")
+			cat(paste0("proc.time for classification probabilities: ", round(as.numeric((proc.time() - ptm)[3]),2)),"\n")
 			if(missing(z.true)==TRUE){
 				ls <- label.switching( method = c("STEPHENS","ECR","ECR-ITERATIVE-1"),
 							zpivot = allocations[maxIter,], z = allocations,K = K, complete = complete.loglikelihood, data = x,
@@ -1770,6 +1792,12 @@ dealWithLabelSwitching <- function(outDir,reorderModels, binaryData,z.true){
 			cat(paste0("     (Method 1):     \'z.ECR.mapK.",K,".txt\'"),"\n")
 			cat(paste0("     (Method 2):     \'z.KL.mapK.",K,".txt\'"),"\n")
 			cat(paste0("     (Method 3):     \'z.ECR-ITERATIVE1.mapK.",K,".txt\'"),"\n")
+
+		}else{
+			cat(paste0('[NOTE]:    Most probable model corresponds to 1 cluster so the label-switching algorithms are not applied.',"\n"))
+			write.table(mcmc, file = paste("MCMC.mapK.",K,".txt",sep=""),col.names = c(paste(rep(paste(expression(theta),1:K,sep="."),d),rep(1:d,each=K),sep="-"),paste('p',1:K,sep=".")))
+			cat(paste0("MCMC output corresponding to most probable model (K = 1) written to: \'", paste("MCMC.mapK.",K,".txt",sep=""),"\'"),"\n")
+
 
 		}
 
