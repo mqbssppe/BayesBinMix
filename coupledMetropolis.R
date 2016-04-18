@@ -33,7 +33,7 @@ complete.loglikelihood<-function(x,z,pars){
 }
 
 
-gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true){
+gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,outputDir){
 	if (missing(K)) {stop(cat(paste("    [ERROR]: number of clusters (K) not provided."), "\n"))}
 	if (missing(m)) {stop(cat(paste("    [ERROR]: number of MCMC iterations (m) not provided."), "\n"))}
 	if (missing(thinning)) {thinning <- 5}
@@ -41,9 +41,6 @@ gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true){
 		stop(cat(paste("    [ERROR]: number of clusters (K) should be at least equal to 2."), "\n"))
 	}
 	d <- dim(data)[2]
-	if (d < 2*K - 1) {
-		stop(cat(paste("    [ERROR]: Not identifiable mixture: d should be greater than or equal to 2K - 1"), "\n"))
-	}
 	if (burn > m - 1) {
 		stop(cat(paste("    [ERROR]: burn-in period (burn) not valid"), "\n"))
 	}
@@ -62,6 +59,10 @@ gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true){
 	if (missing(data)) {stop(cat(paste("    [ERROR]: data is missing."), "\n"))}
 	n <- dim(data)[1]
 	x <- data
+
+	dir.create(outputDir)
+	setwd(outputDir)
+
 
 	p <- myDirichlet(rep(1,K)) # initial values for cluster probabilities
 	theta <- array(data = runif(K*d), dim = c(K,d)) # initial values for response probabilities
@@ -104,7 +105,6 @@ gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true){
 		}
 		if(iter %% (m/100) == 0){
 			cat(paste("Running Gibbs: ",100*round(iter/m,3),"% completed.",sep=""),"\n");
-			matplot(read.table("p.txt"),type = "l",lty = 1)
 		}
 	}
 	close(conTheta)
@@ -204,19 +204,17 @@ gibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true){
 	cat(paste("     (Method 1):     \'z.ECR.txt\'"),"\n")
 	cat(paste("     (Method 2):     \'z.KL.txt\'"),"\n")
 	cat(paste("     (Method 3):     \'z.ECR-ITERATIVE1.txt\'"),"\n")
+	setwd("../")
 
 }
 
 
 
-collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,kmeansInit){
+collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,outputDir){
 	if (missing(K)) {stop(cat(paste("    [ERROR]: number of clusters (K) not provided."), "\n"))}
 	if (missing(m)) {stop(cat(paste("    [ERROR]: number of MCMC iterations (m) not provided."), "\n"))}
 	if (missing(thinning)) {thinning <- 5}
 	d <- dim(data)[2]
-	if (d < 2*K - 1) {
-		stop(cat(paste("    [ERROR]: Not identifiable mixture: d should be greater than or equal to 2K - 1"), "\n"))
-	}
 	if (burn > m - 1) {
 		stop(cat(paste("    [ERROR]: burn-in period (burn) not valid"), "\n"))
 	}
@@ -237,11 +235,13 @@ collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,
 	n <- dim(data)[1]
 	x <- data
 
+	dir.create(outputDir)
+	setwd(outputDir)
+
 	p <- myDirichlet(rep(1,K)) # initial values for cluster probabilities
 	theta <- array(data = runif(K*d), dim = c(K,d)) # initial values for response probabilities
-	if(kmeansInit == TRUE){
-	z <- kmeans(x, centers = K)$cluster}else{
-	z <- sample(K,n,replace=TRUE,prob = p)}
+	z <- sample(K,n,replace=TRUE,prob = p)
+
 	s <- l <- newL <- numeric(K)
 	sx <- array(data = 0, dim = c(K,d))
 	#output
@@ -436,7 +436,7 @@ collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,
 			cat(p,"\n",file=conP)		
 		}
 		if(iter %% (m/100) == 0){cat(paste("Running collapsed Gibbs: ",100*round(iter/m,3),"% completed. Reallocation proposal acceptance rates: ", 100*round(reallocationAcceptanceRatio/iter,3),"%, ",100*round(reallocationAcceptanceRatio2/iter,3),"%.",sep=""),"\n");
-		matplot(read.table("p.collapsed.txt"),type = "l",lty = 1)
+		#matplot(read.table("p.collapsed.txt"),type = "l",lty = 1)
 	}
 
 
@@ -521,218 +521,16 @@ collapsedGibbsBinMix <- function(alpha,beta,gamma,K,m,burn,data,thinning,z.true,
 		cat(paste("     (Method 3):     \'reorderedMCMC-STEPHENS.collapsed.txt\'"),"\n")
 		cat(paste("reordered single best clusterings written to: \'reorderedSingleBestClusterings.collapsed.txt\' "),"\n")
 	}
+	setwd("../")
 }
 
 
 ######################################################
-######################################################
 
 
 
 
-
-kmeansK <- function(x,Kstart,alpha,beta,gamma,priorK){
-	Kmax <- Kstart
-	K<- Kstart
-	n <- dim(x)[1]
-	d <- dim(x)[2]
-	theta <- array(data = runif(Kmax*d), dim = c(Kmax,d)) # initial values for response probabilities
-	s <- l <- newL <- numeric(Kmax)
-	sx <- array(data = 0, dim = c(Kmax,d))
-
-
-	z <- kmeans(x, centers = K)$cluster
-	s[1:K] <- rep(0,K)
-	sx[1:K,] <- array(data = 0, dim = c(K,d))
-	for(i in 1:n){
-		s[z[i]] <- s[z[i]] + 1
-		sx[z[i],] <- sx[z[i],] + x[i,]
-	}
-	p <- myDirichlet(gamma[1:K] + s[1:K])
-	for(k in 1:K){
-		theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
-	}		
-
-
-	iter <- 1
-	J <- d + 1
-	mcmc <- array(data = NA, dim = c(1,K,J))
-	for (j in 1:d){
-		for(k in 1:K){
-			mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
-		}
-	}
-	mcmc[1,,J] <- p
-	ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
-	maxLL <- ll
-	goodZ <- z
-
-
-
-	for(K in rep(Kstart, each = 50)){
-		z <- kmeans(x, centers = K)$cluster
-		s[1:K] <- rep(0,K)
-		sx[1:K,] <- array(data = 0, dim = c(K,d))
-		for(i in 1:n){
-			s[z[i]] <- s[z[i]] + 1
-			sx[z[i],] <- sx[z[i],] + x[i,]
-		}
-		p <- myDirichlet(gamma[1:K] + s[1:K])
-		for(k in 1:K){
-			theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
-		}		
-
-
-		iter <- 1
-		J <- d + 1
-		mcmc <- array(data = NA, dim = c(1,K,J))
-		for (j in 1:d){
-			for(k in 1:K){
-				mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
-			}
-		}
-		mcmc[1,,J] <- p
-		ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
-		if(is.na(ll)==TRUE){ll <- maxLL - 1}
-		if(ll > maxLL){maxLL <- ll; goodZ <- z; cat(paste0("                 new goodZ: LL = ",ll," (K = ",K,")"),"\n")}
-	}
-	return(goodZ)
-}
-
-#############################################################################
-#############################################################################
-
-
-kmeansK0 <- function(x,Kmax,alpha,beta,gamma,priorK){
-
-	K<- 1
-	n <- dim(x)[1]
-	d <- dim(x)[2]
-	theta <- array(data = runif(Kmax*d), dim = c(Kmax,d)) # initial values for response probabilities
-	s <- l <- newL <- numeric(Kmax)
-	sx <- array(data = 0, dim = c(Kmax,d))
-
-
-	z <- kmeans(x, centers = K)$cluster
-	s[1:K] <- rep(0,K)
-	sx[1:K,] <- array(data = 0, dim = c(K,d))
-	for(i in 1:n){
-		s[z[i]] <- s[z[i]] + 1
-		sx[z[i],] <- sx[z[i],] + x[i,]
-	}
-	p <- myDirichlet(gamma[1:K] + s[1:K])
-	for(k in 1:K){
-		theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
-	}		
-
-
-	iter <- 1
-	J <- d + 1
-	mcmc <- array(data = NA, dim = c(1,K,J))
-	for (j in 1:d){
-		for(k in 1:K){
-			mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
-		}
-	}
-	mcmc[1,,J] <- p
-	ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
-	maxLL <- ll
-	goodZ <- z
-
-
-
-	for(K in rep(1:Kmax, each = 50)){
-		z <- kmeans(x, centers = K)$cluster
-		s[1:K] <- rep(0,K)
-		sx[1:K,] <- array(data = 0, dim = c(K,d))
-		for(i in 1:n){
-			s[z[i]] <- s[z[i]] + 1
-			sx[z[i],] <- sx[z[i],] + x[i,]
-		}
-		p <- myDirichlet(gamma[1:K] + s[1:K])
-		for(k in 1:K){
-			theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
-		}		
-
-
-		iter <- 1
-		J <- d + 1
-		mcmc <- array(data = NA, dim = c(1,K,J))
-		for (j in 1:d){
-			for(k in 1:K){
-				mcmc[1,k,j] <- theta[(j-1)*Kmax + k]
-			}
-		}
-		mcmc[1,,J] <- p
-		ll <- complete.loglikelihood(x,z,array(mcmc[1,,],dim=c(K,J)))
-		if(is.na(ll)==TRUE){ll <- maxLL - 1}
-		if(ll > maxLL){maxLL <- ll; goodZ <- z; cat(paste0("                 new goodZ: LL = ",ll," (K = ",K,")"),"\n")}
-	}
-	return(goodZ)
-}
-
-
-
-##################################################################################################################
-
-
-kmeansK2 <- function(x,Kmax,alpha,beta,gamma,priorK){
-
-	K<- 1
-	
-	d <- dim(x)[2]
-	theta <- array(data = runif(Kmax*d), dim = c(Kmax,d)) # initial values for response probabilities
-	s <- l <- newL <- numeric(Kmax)
-	sx <- array(data = 0, dim = c(Kmax,d))
-
-
-	z <- kmeans(x, centers = K)$cluster
-	s[1:K] <- rep(0,K)
-	sx[1:K,] <- array(data = 0, dim = c(K,d))
-	for(i in 1:n){
-		s[z[i]] <- s[z[i]] + 1
-		sx[z[i],] <- sx[z[i],] + x[i,]
-	}
-
-	#compute log-posterior
-	log.posterior <- priorK[K] + sum(lgamma( gamma[1:K] + s )) - d*sum(lgamma(alpha+beta+s)) - lgamma(n + sum(gamma[1:K]))
-	for(k in 1:K){
-		log.posterior <- log.posterior + sum(lgamma(alpha + sx[k,]) + lgamma(beta + s[k] - sx[k,]))
-	}
-
-	ll <- log.posterior
-	maxLL <- ll
-	goodZ <- z
-
-
-
-	for(K in rep(1:Kmax, each = 50)){
-		z <- kmeans(x, centers = K)$cluster
-		s[1:K] <- rep(0,K)
-		sx[1:K,] <- array(data = 0, dim = c(K,d))
-		for(i in 1:n){
-			s[z[i]] <- s[z[i]] + 1
-			sx[z[i],] <- sx[z[i],] + x[i,]
-		}
-		log.posterior <- priorK[K] + sum(lgamma( gamma[1:K] + s )) - d*sum(lgamma(alpha+beta+s)) - lgamma(n + sum(gamma[1:K]))
-		for(k in 1:K){
-			log.posterior <- log.posterior + sum(lgamma(alpha + sx[k,]) + lgamma(beta + s[k] - sx[k,]))
-		}
-
-		ll <- log.posterior
-		if(is.na(ll)==TRUE){ll <- maxLL - 1}
-		if(ll > maxLL){maxLL <- ll; goodZ <- z; print(paste0("new goodZ: LL = ",ll," (K =",K,")"))}
-	}
-	return(goodZ)
-}
-
-###############################################################################################################
-
-
-
-
-
-allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,z.true,ClusterPrior,ejectionAlpha,Kstart,kmeansInit,outputDir,metropolisMoves,reorderModels,heat,zStart,LS){
+allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,z.true,ClusterPrior,ejectionAlpha,Kstart,outputDir,metropolisMoves,reorderModels,heat,zStart,LS){
 #	if(dir.exists(outputDir) == TRUE){
 #		stop(cat(paste("    [ERROR]: directory exists, please provide different name."), "\n"))
 #	}
@@ -743,9 +541,6 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 	if (missing(thinning)) {thinning <- 5}
 	if (missing(LS)) {LS <- TRUE}
 	if (missing(thinning)) {ejectionAlpha <- 1}
-#	if (d < 2*K - 1) {
-#		stop(cat(paste("    [ERROR]: Not identifiable mixture: d should be greater than or equal to 2K - 1"), "\n"))
-#	}
 	if (burn > m - 1) {
 		stop(cat(paste("    [ERROR]: burn-in period (burn) not valid"), "\n"))
 	}
@@ -789,9 +584,8 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 			priorK[k] <- dpois(k,lambda = 1, log = TRUE) - denom 
 		}
 	}
-	if(missing(kmeansInit) == TRUE){kmeansInit <- TRUE}	
 	if(missing(Kstart)){
-		if(kmeansInit == TRUE){Kstart <- Kmax}else{Kstart <- 1}
+		Kstart <- 1
 	}
 	K <- Kstart
 	p <- myDirichlet(rep(1,K)) # initial values for cluster probabilities
@@ -799,36 +593,13 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 	s <- l <- newL <- numeric(Kmax)
 	sx <- array(data = 0, dim = c(Kmax,d))
 
-	#kmeansPropZ <- array(data = NA,dim = c(Kmax,n))
-	#for(k in 1:Kmax){
-	#	kmeansPropZ[k,] <- kmeans(x, centers = k,iter.max = 100)$cluster
-	#}
-
 
 	if(missing(zStart) == TRUE){
-
-	cat(paste("Initializing..."),"\n")
-	cat("\n")
-	if(kmeansInit == TRUE){
-#		z <- kmeans(x, centers = K)$cluster
-		z <- kmeansK(x,Kstart=K,alpha=alpha,beta=beta,gamma=gamma,priorK = priorK)
-		#K <- max(z)
-		s[1:K] <- rep(0,K)
-		sx[1:K,] <- array(data = 0, dim = c(K,d))
-		for(i in 1:n){
-			s[z[i]] <- s[z[i]] + 1
-			sx[z[i],] <- sx[z[i],] + x[i,]
-		}
-		p <- myDirichlet(gamma[1:K] + s[1:K])
-		for(k in 1:K){
-			theta[k,] <- rbeta(d, shape1 = alpha + sx[k,], shape2 = beta + s[k] - sx[k,])
-		}		
-	}else{
-		z <- sample(K,n,replace=TRUE,prob = p)}
-
-	cat(paste("Allocation sampler running..."),"\n")
-	cat("\n")
-
+		cat(paste("Initializing..."),"\n")
+		cat("\n")
+		z <- sample(K,n,replace=TRUE,prob = p)
+		cat(paste("Allocation sampler running..."),"\n")
+		cat("\n")
 	}else{
 		z <- zStart
 		s[1:K] <- rep(0,K)
