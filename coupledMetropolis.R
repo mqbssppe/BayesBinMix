@@ -1208,7 +1208,7 @@ allocationSamplerBinMix <- function(Kmax, alpha,beta,gamma,m,burn,data,thinning,
 
 library('foreach')
 library('doMC')
-coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, controlCriterion, z.true, ejectionAlpha){
+coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPrior,m, alpha, beta, gamma, z.true, ejectionAlpha){
 	if(missing(nChains) == TRUE){stop(cat(paste("    [ERROR]: number of chains not provided."), "\n"))}
 	if(missing(heats) == TRUE){
 		heats <- seq(1,0.1,length = nChains)
@@ -1226,7 +1226,6 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 	if (length(table(gamma)) > 1){
 		stop(cat(paste("    [ERROR]: Dirichlet prior parameters should be the same."), "\n"))
 	}
-	if(missing(controlCriterion) == TRUE){controlCriterion <- FALSE}
 	d <- dim(binaryData)[2]; n <- dim(binaryData)[1]; priorK <- numeric(Kmax)
 	if(ClusterPrior == "uniform"){
 		priorK <- rep(log(1/Kmax),Kmax)
@@ -1377,21 +1376,6 @@ coupledMetropolis <- function(Kmax, nChains,heats,binaryData,outPrefix,ClusterPr
 			cat(z,"\n",file=conZ)
 			p <- as.numeric(read.table(paste0(outPrefix,"1/p.varK.txt"))[1,])
 			cat(p,"\n",file=conP)		
-			if((controlCriterion == TRUE) && (length(table(heats)) > 1) && (iter %% 10 == 0)){
-				write(paste0('     localAR: ', localAR/10),stderr())
-				#dt <- 1/(1 + 100*((1:nChains)-1))
-				#lastTemperature <- heats[nChains]
-				if((localAR/10 < 0.2)||(localAR/10 > 0.5)){ 
-							#lastTemperature <- runif(1) 
-							#lastTemperature <- max(0.01, lastTemperature);
-							#lastTemperature <- min(0.98, lastTemperature); 
-							lastTemperature <- 10*runif(1)
-							write(paste0('     new temperature: ', lastTemperature),stderr())
-						}
-				#temperatures <- heats <- seq(1, lastTemperature, length = nChains)
-				temperatures <- heats <- 1/(1 + lastTemperature*((1:nChains)-1))
-				localAR <- 0
-			}
 
 		}
 		close(conK)
