@@ -1,0 +1,146 @@
+
+R version 3.2.5 (2016-04-14) -- "Very, Very Secure Dishes"
+Copyright (C) 2016 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "BayesBinMix"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> base::assign(".ExTimings", "BayesBinMix-Ex.timings", pos = 'CheckExEnv')
+> base::cat("name\tuser\tsystem\telapsed\n", file=base::get(".ExTimings", pos = 'CheckExEnv'))
+> base::assign(".format_ptime",
++ function(x) {
++   if(!is.na(x[4L])) x[1L] <- x[1L] + x[4L]
++   if(!is.na(x[5L])) x[2L] <- x[2L] + x[5L]
++   options(OutDec = '.')
++   format(x[1L:3L], digits = 7L)
++ },
++ pos = 'CheckExEnv')
+> 
+> ### * </HEADER>
+> library('BayesBinMix')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("coupledMetropolis")
+> ### * coupledMetropolis
+> 
+> flush(stderr()); flush(stdout())
+> 
+> base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+> ### Name: coupledMetropolis
+> ### Title: Metropolis-coupled Markov chain Monte Carlo sampler
+> ### Aliases: coupledMetropolis
+> ### Keywords: ~kwd1 ~kwd2
+> 
+> ### ** Examples
+> 
+> #generate dataset from a mixture of 2 ten-dimensional Bernoulli distributions.
+> set.seed(1)
+> d <- 10 # number of columns
+> n <- 50 # number of rows (sample size)
+> K <- 2 	 # true number of clusters
+> p.true <- myDirichlet(rep(10,K)) # true weight of each cluster
+> z.true <- numeric(n) # true cluster membership
+> z.true <- sample(K,n,replace=TRUE,prob = p.true)
+> theta.true <- array(data = NA, dim = c(K,d)) 	#true probability of positive responses per cluster
+> for(j in 1:d){
++     theta.true[,j] <- rbeta(K, shape1 = 1, shape2 = 1)
++ }
+> x <- array(data=NA,dim = c(n,d)) # data: n X d array
+> for(k in 1:K){
++         myIndex <- which(z.true == k)
++         for (j in 1:d){
++                 x[myIndex,j] <- rbinom(n = length(myIndex), size = 1, prob = theta.true[k,j])   
++         }
++ }
+> #	number of heated paralled chains
+> nChains <- 2
+> heats <- seq(1,0.8,length = nChains)
+> # NOTE: only m = 5 iterations are used here (modify to m = 1000 for non-erroneous results)
+> coupledMetropolis(Kmax = 10,nChains = nChains,heats =  heats,binaryData = x, 
++ 	outPrefix = 'BayesBinMixExample',ClusterPrior = 'poisson',m = 5)
+            Create temporary directory: 'BayesBinMixExample1'. 
+            Create temporary directory: 'BayesBinMixExample2'. 
+    [NOTE]: screen output from multiple threads is redirected to 'BayesBinMixExample-sampler.log'. 
+20% completed. Chain switching acceptance rate: 0%.
+40% completed. Chain switching acceptance rate: 0%.
+60% completed. Chain switching acceptance rate: 0%.
+80% completed. Chain switching acceptance rate: 0%.
+100% completed. Chain switching acceptance rate: 0%.
+
+kFile
+  1   2 
+0.2 0.8 
+
+Most probable model: K = 2 with P(K = 2) = 0.8 
+
+Dealing with Label Switching for K = 2 
+proc.time for classification probabilities: 0 
+
+    ......................................................................................
+    . Method                         Time (sec)           Status                         . 
+    ......................................................................................
+    . STEPHENS                       0.173                Converged (2 iterations)       . 
+    . ECR                            0.002                OK                             . 
+    . ECR-ITERATIVE-1                0.027                Converged (3 iterations)       . 
+    ......................................................................................
+
+    Relabelling all methods according to method STEPHENS ... done!
+    Retrieve the 3 permutation arrays by typing:
+        [...]$permutations$"STEPHENS"
+        [...]$permutations$"ECR"
+        [...]$permutations$"ECR-ITERATIVE-1"
+    Retrieve the 3 best clusterings: [...]$clusters
+    Retrieve the 3 CPU times: [...]$timings
+    Retrieve the 3 X 3 similarity matrix: [...]$similarity
+    Label switching finished. Total time: 0.2 seconds. 
+raw MCMC parameters for most probable K written to: 'rawMCMC.mapK.2.txt'  
+raw MCMC latent allocations for most probable K written to: 'z.mapK.2.txt'  
+reordered MCMC output written to:  
+     (Method 1):     'reorderedMCMC-ECR.mapK.2.txt' 
+     (Method 2):     'reorderedMCMC-ECR-ITERATIVE1.mapK.2.txt' 
+     (Method 3):     'reorderedMCMC-STEPHENS.mapK.2.txt' 
+reordered single best clusterings written to: 'reorderedSingleBestClusterings.mapK.2.txt'  
+reordered MCMC latent allocations for most probable K written to:  
+     (Method 1):     'z.ECR.mapK.2.txt' 
+     (Method 2):     'z.KL.mapK.2.txt' 
+     (Method 3):     'z.ECR-ITERATIVE1.mapK.2.txt' 
+> # it is also advised to use z.true = z.true in order to directly compare with the true values.
+> # in general it is advised to use at least 4 chains with heats <- seq(1,0.3,length = nChains)
+> 
+> 
+> 
+> 
+> 
+> 
+> base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+> base::cat("coupledMetropolis", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+> ### * <FOOTER>
+> ###
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  0.325 0.019 1.082 0.791 0.151 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
