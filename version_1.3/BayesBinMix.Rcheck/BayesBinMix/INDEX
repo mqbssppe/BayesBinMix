@@ -1,0 +1,17 @@
+BayesBinMix-package     Bayesian Estimation of Mixtures of Multivariate
+                        Bernoulli Distributions
+allocationSamplerBinMix
+                        The allocation sampler algorithm.
+collapsedGibbsBinMix    collapsed Gibbs sampler
+complete.loglikelihood
+                        complete log-likelihood
+coupledMetropolis       Metropolis-coupled Markov chain Monte Carlo
+                        sampler
+dealWithLabelSwitching
+                        Label switching algorithms
+dealWithLabelSwitchingMissing
+                        Label switching algorithms for the case of
+                        missing data
+gibbsBinMix             Standard Gibbs sampler
+myDirichlet             Simulate from Dirichlet distribution
+toSolve                 An equation to solve

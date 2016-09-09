@@ -1,0 +1,186 @@
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+Initializing... 
+
+Allocation sampler running... 
+
+Initializing... 
+
+Allocation sampler running... 
+
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 100% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 50% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 33.3% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 25% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             50% completed. 0%, 0%, 0%, 20% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 14.3% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             80% completed. 0%, 0%, 0%, 12.5% 
+                             90% completed. 0%, 0%, 0%, 22.2% 
+                             100% completed. 0%, 0%, 0%, 30% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 100% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 66.7% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 50% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             50% completed. 0%, 40%, 0%, 40% 
+                             60% completed. 0%, 33.3%, 0%, 33.3% 
+                             70% completed. 0%, 28.6%, 0%, 28.6% 
+                             80% completed. 0%, 25%, 0%, 25% 
+                             90% completed. 0%, 22.2%, 0%, 22.2% 
+                             100% completed. 0%, 20%, 0%, 20% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 100% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 133.3% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 100% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             50% completed. 0%, 0%, 0%, 80% 
+                             60% completed. 0%, 0%, 0%, 100% 
+                             70% completed. 0%, 0%, 0%, 114.3% 
+                             80% completed. 0%, 25%, 0%, 100% 
+                             90% completed. 0%, 44.4%, 0%, 88.9% 
+                             100% completed. 0%, 40%, 0%, 80% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+changing working directory to BayesBinMixExample1 
+changing working directory to BayesBinMixExample2 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+    Reallocation proposal acceptance rates: Move 1, Move 2, Move 3, Move 4 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             10% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 0% 
+                             20% completed. 0%, 0%, 0%, 0% 
+                             50% completed. 0%, 0%, 0%, 0% 
+                             60% completed. 0%, 0%, 0%, 0% 
+                             30% completed. 0%, 0%, 0%, 0% 
+                             70% completed. 0%, 0%, 0%, 0% 
+                             80% completed. 0%, 0%, 0%, 0% 
+                             90% completed. 0%, 0%, 0%, 0% 
+                             40% completed. 0%, 0%, 0%, 50% 
+                             100% completed. 0%, 0%, 0%, 0% 
+Allocation Sampler finished. 
+
+back to working directory now. 
+                             50% completed. 0%, 0%, 0%, 80% 
+                             60% completed. 0%, 0%, 0%, 66.7% 
+                             70% completed. 0%, 0%, 0%, 57.1% 
+                             80% completed. 0%, 0%, 0%, 75% 
+                             90% completed. 0%, 0%, 0%, 66.7% 
+                             100% completed. 0%, 0%, 0%, 60% 
+Allocation Sampler finished. 
+
+back to working directory now. 
