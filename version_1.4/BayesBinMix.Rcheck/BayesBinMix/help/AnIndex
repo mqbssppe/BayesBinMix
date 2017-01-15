@@ -1,0 +1,12 @@
+BayesBinMix-package	BayesBinMix-package
+allocationSamplerBinMix	allocationSamplerBinMix
+BayesBinMix	BayesBinMix-package
+collapsedGibbsBinMix	collapsedGibbsBinMix
+complete.loglikelihood	complete.loglikelihood
+coupledMetropolis	coupledMetropolis
+dealWithLabelSwitching	dealWithLabelSwitching
+dealWithLabelSwitchingMissing	dealWithLabelSwitchingMissing
+gibbsBinMix	gibbsBinMix
+myDirichlet	myDirichlet
+print.bbm.object	print.bbm.object
+toSolve	toSolve

@@ -1,0 +1,11 @@
+exportPattern("^[[:alpha:]]+")
+S3method(print, bbm.object)
+import(label.switching)
+import(foreach)
+import(doParallel)
+import(coda)
+importFrom("grDevices", "topo.colors")
+importFrom("graphics", "legend", "matplot", "points")
+importFrom("stats", "rbinom", "dbinom", "dpois", "ppois", "rbeta", "rgamma", "runif")
+importFrom("utils", "read.table", "write.csv", "read.csv", "write.table")
+
